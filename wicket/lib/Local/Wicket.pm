@@ -16,6 +16,9 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);     # MD5 hashing
 use DBI 1.616;          # Generic interface to a large number of databases
 use DBD::mysql;         # DBI driver for MySQL
 
+# Modules distributed in wheezy
+use Config::Any;                # Load configs from any file format
+
 # Alternate uses
 #~ use Devel::Comments '###', ({ -file => 'debug.log' });                   #~
 
@@ -106,6 +109,29 @@ sub _insert {
     
     return 1;
 }; ## _insert
+
+#=========# INTERNAL ROUTINE
+#
+#   _load( $configfn );     # load config from a YAML file
+#       
+# ____
+# 
+sub _load {
+    my $configfn        = shift;
+    die '82' if not $configfn;
+    
+    my $config          ;
+    
+    my $rv          = Config::Any->load_files({ 
+        files           => [$configfn], # aryref
+        use_ext         => 1,           # format must match extension
+        flatten_to_hash => 1,           # less wrapping paper
+    });
+    
+    $config = $rv->{$configfn};
+    die '83' if not ref $config or not keys $config;    # got nothing
+    return $config;
+}; ## _load
 
 #=========# INTERNAL ROUTINE
 #
