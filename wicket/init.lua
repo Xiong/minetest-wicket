@@ -5,15 +5,15 @@
 
 local wicket_registrar = {}
 
-wicket_registrar.register = function(player)
+wicket_registrar.register = function(self, player)
     local pw = tostring(math.random(1, 999999))
     local uname = player:get_player_name()
     local msg = "Your new password is " .. pw
-    if validate(uname, pw, msg)
+    if self:validate(player, uname, pw, msg)
         minetest.chat_send_player(player:get_player_name(), msg)
 end
 
-wicket_registrar.validate = function()
+wicket_registrar.validate = function(player, uname, pw, msg)
 
 end
 
