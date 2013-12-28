@@ -16,5 +16,6 @@ sym
 cover_db/
 
 # Don't track internal symlink -- will blow up
-t
-t/
+#t
+#t/
+# Not using internal symlink because no Build.PL

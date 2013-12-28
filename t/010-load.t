@@ -1,0 +1,1 @@
+/home/xiong/projects/minetest-wicket/xt/000/010-load.t
