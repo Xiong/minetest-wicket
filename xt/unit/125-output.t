@@ -73,13 +73,20 @@ my @td  = (
 #----------------------------------------------------------------------------#
 # EXECUTE AND CHECK
 
-my $tc          ;
-my @rv          ;
+# persistent across cases if not cleared
+my $tc          ;               # test counter (number of cases)
+my @rv          = ();           # normal return value
+my $stdout      = q{};          # captured string
+my $stderr      = q{};          # captured string
+my $evalerr     = q{};          # trapped  string
+my $OLDOUT      ;               # saved STDOUT fh
+my $OLDERR      ;               # saved STDERR fh
+
+# scratch variables
+my @args        ;
 my $got         ;
 my $want        ;
 my $diag        = $base;
-my $OLDOUT      ;   # saved STDOUT fh
-my $OLDERR      ;   # saved STDERR fh
 
 #----------------------------------------------------------------------------#
 
@@ -96,35 +103,32 @@ for (@td) {
     subtest $case => sub {
         
         # per-case variables
-        my $die         = $t{-die};     # must fail
-        my $like        = $t{-like};    # regex supplied
-        my $need        = $t{-need};    # exact return value supplied
-        my $deep        = $t{-deep};    # traverse structure (e.g., hashref)
         my $code        = $t{-code};    # execute this code
         my $args        = $t{-args};    # ... with these args
-        my $skip        = $t{-skip};    # or skip this case altogether
-        
-        my @args        ;               # dereferenced
-        my $argstr      = q{};          #    then stringified (uninterpolated)
-        my $stdout      = q{};          # captured string
-        my $stderr      = q{};          # captured string
-        my $evalerr     = q{};          # trapped  string
-        
-        # conditional unpack
-        if ( $args ) {
-            @args       = @$args;
-            $argstr     = q{(@args)};
-        };
-        
-        # conditional execution
+        my $die         = $t{-die};     # must fail
+        my $like        = $t{-like};    # normal return value regex supplied
+        my $need        = $t{-need};    # exact return value supplied
+        my $deep        = $t{-deep};    # traverse structure (e.g., hashref)
+        my $outlike     = $t{-outlike}; # STDOUT regex supplied
+        my $errlike     = $t{-errlike}; # STDERR regex supplied
+                
+        # set up code under test
         if ( not $code ) {
-            $code           = $unit;        # sticky
+            $code       = $unit;            # "sticky"
         };
-        if ( $code ) {                          # string eval
-            $diag           = 'execute (s)';
-            @rv             = eval "$code$argstr" ;
-            pass( $diag );                  # test script didn't fatal
-            $evalerr         = $@;
+        if ( $args and ref $args ) {        # concatenate if okay to deref
+            @args       = @$args;
+            $code       .= q{(@args)};
+        }
+        else {
+            @args       = ();               # otherwise clear global
+        };
+        
+        # test execution
+        if ( $code ) {
+            $diag           = 'execute';
+            suppose( $code );               # this script gimmick
+            pass( $diag );                  # gimmick didn't fatal
             note($evalerr) if $evalerr;     # did code under test fatal?
         };
         
@@ -157,6 +161,18 @@ for (@td) {
             $want           = $deep;
             is_deeply( $got, $want, $diag );
         };
+        if ($outlike) {
+            $diag           = 'stdout-like';
+            $got            = $stdout;
+            $want           = $outlike;
+            like( $got, $want, $diag );
+        }; 
+        if ($errlike) {
+            $diag           = 'stderr-like';
+            $got            = $stderr;
+            $want           = $errlike;
+            like( $got, $want, $diag );
+        }; 
         
         # Extra-verbose dump optional for test script debug.
         if ( $Verbose >= 1 ) {
@@ -174,6 +190,36 @@ done_testing($tc);
 exit 0;
 
 #============================================================================#
+
+sub suppose {
+    my $code    =  shift;
+    
+    # clear before execution
+    @rv          = ();           # normal return value
+    $stdout      = q{};          # captured string
+    $stderr      = q{};          # captured string
+    $evalerr     = q{};          # trapped  string
+    
+    # capture ON
+    open (my $OLDOUT, '>&', STDOUT);
+        close STDOUT;
+        open (STDOUT, '>', \$stdout);
+    open (my $OLDERR, '>&', STDERR);
+        close STDERR;
+        open (STDERR, '>', \$stderr);
+    
+    # execute
+    @rv         = eval "$code";
+    
+    # stash @!
+    $evalerr    = $@;
+    
+    # capture OFF
+    open (STDOUT, '>&', $OLDOUT);
+    open (STDERR, '>&', $OLDERR);
+    
+    return @rv;
+};
 
 sub words {                         # sloppy match these strings
     my @words   = @_;
