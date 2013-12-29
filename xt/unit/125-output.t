@@ -32,15 +32,24 @@ my $wicket_token    = q{%# };       # prefixed to every message
 my @td  = (
     
     {
-        -case   => 'Joe',
-        -args   => [ 'User', $username ],
-        -need   => $wicket_token . q{User: Joe},
+        -case       => 'Joe',
+        -args       => [ "User: $username" ],
+        -outlike    => qr/%# User: Joe/,
     },
     
     {
-        -case   => 'flimflam',
-        -args   => [ 'Pass', $password ],
-        -need   => $wicket_token . q{Pass: flimflam},
+        -case       => 'flimflam',
+        -args       => [ "Pass: $password" ],
+        -outlike    => qr/%# Pass: flimflam/,
+    },
+    
+    {
+        -case       => 'two lines',
+        -args       => [ 
+                            "User: $username",
+                            "Pass: $password",
+                    ],
+        -outlike    => qr/%# User: Joe\s%# Pass: flimflam/,
     },
     
 );
