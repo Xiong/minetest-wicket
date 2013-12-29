@@ -135,6 +135,20 @@ sub _load {
 
 #=========# INTERNAL ROUTINE
 #
+#   _output();     # IPC
+# 
+# Mostly just a wrapper around say().
+# 
+sub _output {
+    my @args    = @_;
+    my $wicket_token    = q{%# };       # prefixed to every message
+    
+    for (@args) { say $wicket_token . $_ };
+    
+}; ## _output
+
+#=========# INTERNAL ROUTINE
+#
 #   _do_();     # short
 #       
 # Purpose   : ____

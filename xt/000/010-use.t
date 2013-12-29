@@ -13,5 +13,5 @@ use Local::Wicket;              # Minetest-Mediawiki bridge
     
 }
 
-pass( 'Load modules.' );
+pass( 'Use modules.' );
 diag( "Testing Local::Wicket $Local::Wicket::VERSION" );
