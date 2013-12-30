@@ -65,6 +65,11 @@ my @td  = (
                     dbuser  => $dbuser  ,
                     dbpass  => $dbpass  ,
                     dbtable => $dbtable ,
+                    ban     => [
+                        '/guest/',
+                        '/mine/',
+                        '/test/',
+                    ],
                 },
     },
     
