@@ -47,9 +47,9 @@ my @td  = (
             say {$fh} "" ;
             say {$fh} "# dummy regexes" ;
             say {$fh} "ban:" ;
-            say {$fh} "     - /guest/" ;
-            say {$fh} "     - /mine/" ;
-            say {$fh} "     - /test/" ;
+            say {$fh} "     - guest" ;
+            say {$fh} "     - mine" ;
+            say {$fh} "     - test" ;
             close $fh or die '81';
             
             return 1;   # OK
@@ -66,9 +66,9 @@ my @td  = (
                     dbpass  => $dbpass  ,
                     dbtable => $dbtable ,
                     ban     => [
-                        '/guest/',
-                        '/mine/',
-                        '/test/',
+                        'guest',
+                        'mine',
+                        'test',
                     ],
                 },
     },
@@ -104,7 +104,7 @@ my $diag        = $base;
 
 # Extra-verbose dump optional for test script debug.
 my $Verbose     = 0;
-   $Verbose++;
+#~    $Verbose++;
 
 for (@td) {
     next if $_->{-skip};          # skip the entire case

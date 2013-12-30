@@ -5,6 +5,6 @@ dbtable: test_table
 
 # dummy regexes
 ban:
-     - /guest/
-     - /mine/
-     - /test/
+     - guest
+     - mine
+     - test
