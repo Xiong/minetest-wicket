@@ -9,49 +9,77 @@ my $QRTRUE       = $Local::Wicket::QRTRUE    ;
 my $QRFALSE      = $Local::Wicket::QRFALSE   ;
 
 #----------------------------------------------------------------------------#
-# output.t
+# load.t
 #
-# Check normal output (IPC back to the Lua mod). 
+# Load the secret configuration YAML file. With improved framework.
 #
-my $unit        = q{Local::Wicket::_output};
+my $unit        = q{Local::Wicket::_load};
 my $base        = $unit . q{: };
 
 #----------------------------------------------------------------------------#
 # CONSTANTS
 
-my $username        = 'Joe';        # (game) user inserted
-my $password        = 'flimflam';   # temporary password to give to user
-my $wicket_token    = q{%# };       # prefixed to every message
+my $username    = 'Joe';                # (game) user to insert
+my $password    = 'flimflam';           # temporary password given to user
+my $dbname      = 'test';               # name of the wiki's MySQL DB
+my $dbuser      = 'testuser';           # same as the wiki's DB user
+my $dbpass      = 'testpass';           # DB password for above
+my $dbtable     = 'test_table';         # name of the "user" table
 
 #----------------------------------------------------------------------------#
 # GLOBALS
+my $configfn    = 'dummy.yaml';
 
 #----------------------------------------------------------------------------#
 # CASES
 
 my @td  = (
-    
     {
-        -case       => 'Joe',
-        -args       => [ "User: $username" ],
-        -outlike    => qr/%# User: Joe/,
+        -case   => 'setup',     # write a dummy config file
+        -code   => q[
+            note 'Writing dummy config...';
+            eval{ unlink $configfn if -f $configfn };
+            open my $fh, '>', $configfn or die '80';
+            say {$fh} "dbname:  $dbname"  ;
+            say {$fh} "dbuser:  $dbuser"  ;
+            say {$fh} "dbpass:  $dbpass"  ;
+            say {$fh} "dbtable: $dbtable" ;
+            say {$fh} "" ;
+            say {$fh} "# dummy regexes" ;
+            say {$fh} "ban:" ;
+            say {$fh} "     - guest" ;
+            say {$fh} "     - mine" ;
+            say {$fh} "     - test" ;
+            close $fh or die '81';
+            
+            return 1;   # OK
+        ],
+        -need   => 1,
     },
     
     {
-        -case       => 'flimflam',
-        -args       => [ "Pass: $password" ],
-        -outlike    => qr/%# Pass: flimflam/,
-    },
-    
-    {
-        -case       => 'two lines',
-        -args       => [ 
-                            "User: $username",
-                            "Pass: $password",
+        -case   => 'load',
+        -args   => [ $configfn ],
+        -deep   => {
+                    dbname  => $dbname  ,
+                    dbuser  => $dbuser  ,
+                    dbpass  => $dbpass  ,
+                    dbtable => $dbtable ,
+                    ban     => [
+                        'guest',
+                        'mine',
+                        'test',
                     ],
-        -outlike    => qr/%# User: Joe\s%# Pass: flimflam/,
+                },
     },
     
+    {
+        -skip   => 1,
+        -case   => 'bogus',
+        -args   => [ 'bogus.yaml' ],        # BAD no such file
+        -die    => words(qw/ 83 /),
+    },
+            
 );
 
 #----------------------------------------------------------------------------#

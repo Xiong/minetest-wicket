@@ -2,3 +2,9 @@ dbname:  test
 dbuser:  testuser
 dbpass:  testpass
 dbtable: test_table
+
+# dummy regexes
+ban:
+     - guest
+     - mine
+     - test

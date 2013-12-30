@@ -9,22 +9,24 @@ my $QRTRUE       = $Local::Wicket::QRTRUE    ;
 my $QRFALSE      = $Local::Wicket::QRFALSE   ;
 
 #----------------------------------------------------------------------------#
-# output.t
+# score.t
 #
-# Check normal output (IPC back to the Lua mod). 
+# Generate a numerical score for any username submitted.
+# This is like golf; 1 is best and every stroke is worse.  
 #
-my $unit        = q{Local::Wicket::_output};
+my $unit        = q{Local::Wicket::_score};
 my $base        = $unit . q{: };
 
 #----------------------------------------------------------------------------#
 # CONSTANTS
 
-my $username        = 'Joe';        # (game) user inserted
-my $password        = 'flimflam';   # temporary password to give to user
-my $wicket_token    = q{%# };       # prefixed to every message
-
 #----------------------------------------------------------------------------#
 # GLOBALS
+
+my $wicket_token    = q{%# };       # prefixed to every message
+my $wiki    = q/^[A-Z][a-z]{2,7}$/; # 3..8 letters, Titlecased
+my $nowiki  = q/wiki/;
+my $ban     = q/athens|guest|mine|test|admin|mod|sysop/;
 
 #----------------------------------------------------------------------------#
 # CASES
@@ -33,23 +35,101 @@ my @td  = (
     
     {
         -case       => 'Joe',
-        -args       => [ "User: $username" ],
-        -outlike    => qr/%# User: Joe/,
+        -args       => [{
+                        username    => 'Joe',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 1,
     },
     
     {
-        -case       => 'flimflam',
-        -args       => [ "Pass: $password" ],
-        -outlike    => qr/%# Pass: flimflam/,
+        -case       => 'missing arg',
+        -args       => [{
+                        username    => 'Joe',
+                    #    wiki        => $wiki,      # missing arg no good
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -die        => qr/100/,                     # how to check for this
     },
     
     {
-        -case       => 'two lines',
-        -args       => [ 
-                            "User: $username",
-                            "Pass: $password",
-                    ],
-        -outlike    => qr/%# User: Joe\s%# Pass: flimflam/,
+        -case       => 'missing arg again',
+        -args       => [{
+                        username    => 'Joe',
+                    #    wiki        => $wiki,      # missing arg no good
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -die        => qr/(?:$wicket_token)100:/,
+    },
+    
+    {
+        -case       => 'BOO',                   # not title case
+        -args       => [{
+                        username    => 'BOO',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 2,
+    },
+    
+    {
+        -case       => 'Zih77',                 # numerals
+        -args       => [{
+                        username    => 'Zih77',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 2,
+    },
+    
+    {
+        -case       => 'To',                    # too short
+        -args       => [{
+                        username    => 'Zih77',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 2,
+    },
+    
+    {
+        -case       => 'Thibidppy',             # too long
+        -args       => [{
+                        username    => 'Zih77',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 2,
+    },
+    
+    {
+        -case       => 'guest',                 # ban outright
+        -args       => [{
+                        username    => 'guest',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 3,
+    },
+    
+    {
+        -case       => '$mined',                 # ban outright (floats)
+        -args       => [{
+                        username    => '$mined',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 3,
     },
     
 );

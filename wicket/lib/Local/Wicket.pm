@@ -28,15 +28,22 @@ use Config::Any;                # Load configs from any file format
 # Pseudo-globals
 
 # Compiled regexes
-our $QRFALSE            = qr/\A0?\z/            ;
-our $QRTRUE             = qr/\A(?!$QRFALSE)/    ;
+our $QRFALSE        = qr/\A0?\z/            ;
+our $QRTRUE         = qr/\A(?!$QRFALSE)/    ;
+
+# Messages
+my $wicket_token    = q{%# };       # prefixed to every message
+my $message         = {
+    100 => q{Required parameter missing},
+    113 => q{Unspecified error},
+};
 
 ## pseudo-globals
 #----------------------------------------------------------------------------#
 
 #=========# INTERNAL ROUTINE
 #
-#~     _insert({       # insert this user directly into the wiki database
+#~     _insert({   # insert this user directly into the wiki database
 #~         username    => $username,   # (game) user to insert
 #~         password    => $password,   # temporary password given to user
 #~         dbname      => $dbname,     # name of the wiki's MySQL DB
@@ -114,7 +121,7 @@ sub _insert {
 #
 #   _load( $configfn );     # load config from a YAML file
 #       
-# ____
+# TODO: Load multiple files.
 # 
 sub _load {
     my $configfn        = shift;
@@ -149,16 +156,56 @@ sub _output {
 
 #=========# INTERNAL ROUTINE
 #
-#   _do_();     # short
-#       
-# Purpose   : ____
-# Parms     : ____
-# Reads     : ____
-# Returns   : ____
-# Writes    : ____
-# Throws    : ____
-# See also  : ____
+#~     _score({                        # score...
+#~         username    => $username,       # ... this username...
+#~         wiki        => $wiki,           #     ok to insert as wiki user
+#~         nowiki      => $nowiki,         # not ok to insert as wiki user
+#~         ban         => $ban,            # ban from game now; no explanation
 # 
+# Generate a numerical score for any username submitted.
+# This is like golf; 1 is best and every stroke is worse. 
+#   1 is ok as 'resident', 2 is ok only as 'visitor', 3 is ban outright
+# Must pass both {wiki} and {nowiki} checks to qualify. 
+# 
+sub _score {
+    my $args            = shift;
+    my $username        = $args->{username} or _crash('100');
+    my $wiki            = $args->{wiki}     or _crash('100');
+    my $nowiki          = $args->{nowiki}   or _crash('100');
+    my $ban             = $args->{ban}      or _crash('100');
+    
+    my $score           = 1;            # start with one point = best
+    
+    if ( not $username =~ $wiki ) {
+        $score  = 2;
+    };
+    if ( $username =~ $nowiki ) {
+        $score  = 2;
+    };
+    if ( $username =~ $ban ) {
+        $score  = 3;
+    };
+    
+    return $score;
+}; ## _score
+
+#=========# INTERNAL ROUTINE
+#
+#   _crash(113);        # fatal with this message number
+#       
+# ____
+# 
+sub _crash {
+    my $msgno       = shift;
+    my $text        = $wicket_token . $msgno . q{: } . $message->{$msgno};
+    
+    die $text;      # do not return!
+}; ## _crash
+
+#=========# INTERNAL ROUTINE
+#
+#~     _do_();     # short
+#       
 # ____
 # 
 sub _do_ {

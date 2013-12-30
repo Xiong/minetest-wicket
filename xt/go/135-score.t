@@ -1,0 +1,1 @@
+/home/xiong/projects/minetest-wicket/xt/unit/135-score.t
