@@ -5,8 +5,8 @@ use warnings;
 use version; our $VERSION = qv('v0.0.0');
 
 # Core modules
-use Getopt::Long;                           # Parses command-line options
-Getopt::Long::Configure ("bundling");       # enable, for instance, -xyz
+use Getopt::Long                            # Parses command-line options
+    qw( :config bundling );                 # enable, for instance, -xyz
 use Pod::Usage;                             # Build help text from POD
 use Pod::Find qw{pod_where};                # POD is in ...
 
