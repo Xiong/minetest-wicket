@@ -41,6 +41,20 @@ my $message         = {
 ## pseudo-globals
 #----------------------------------------------------------------------------#
 
+#=========# MAIN EXTERNAL ROUTINE
+#
+#~     exit run(@ARGV);     # invoke
+#       
+# Returns appropriate shell exit code: 0 for success, 1 for failure.
+# 
+sub run {
+    my $shellexit           = 1;    # no success yet
+    
+    
+    
+    return $shellexit;
+}; ## run
+
 #=========# INTERNAL ROUTINE
 #
 #~     _insert({   # insert this user directly into the wiki database

@@ -37,6 +37,7 @@ my @td  = (
                         --password  '777'
                         
                     )],
+        -need       => 0,               # shell OK
         -outlike    => $QRTRUE,
     },
     
@@ -159,7 +160,7 @@ for (@td) {
             $want           = $like;
             like( $got, $want, $diag );
         }; 
-        if ($need) {
+        if ( defined $t{-need} ) {
             $diag           = 'return-is';
             $got            = $rv[0];
             $want           = $need;
