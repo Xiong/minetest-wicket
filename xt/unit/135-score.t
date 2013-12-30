@@ -23,7 +23,8 @@ my $base        = $unit . q{: };
 #----------------------------------------------------------------------------#
 # GLOBALS
 
-my $wiki    = q/^[A-Z][a-z]{3,8}/;
+my $wicket_token    = q{%# };       # prefixed to every message
+my $wiki    = q/^[A-Z][a-z]{2,7}$/; # 3..8 letters, Titlecased
 my $nowiki  = q/wiki/;
 my $ban     = q/athens|guest|mine|test|admin|mod|sysop/;
 
@@ -34,24 +35,101 @@ my @td  = (
     
     {
         -case       => 'Joe',
-        -args       => [
+        -args       => [{
                         username    => 'Joe',
                         wiki        => $wiki,
                         nowiki      => $nowiki,
                         ban         => $ban,
-                    ],
+                    }],
         -need       => 1,
     },
     
     {
-        -case       => 'BOO',
-        -args       => [
+        -case       => 'missing arg',
+        -args       => [{
+                        username    => 'Joe',
+                    #    wiki        => $wiki,      # missing arg no good
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -die        => qr/100/,                     # how to check for this
+    },
+    
+    {
+        -case       => 'missing arg again',
+        -args       => [{
+                        username    => 'Joe',
+                    #    wiki        => $wiki,      # missing arg no good
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -die        => qr/(?:$wicket_token)100:/,
+    },
+    
+    {
+        -case       => 'BOO',                   # not title case
+        -args       => [{
                         username    => 'BOO',
                         wiki        => $wiki,
                         nowiki      => $nowiki,
                         ban         => $ban,
-                    ],
+                    }],
         -need       => 2,
+    },
+    
+    {
+        -case       => 'Zih77',                 # numerals
+        -args       => [{
+                        username    => 'Zih77',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 2,
+    },
+    
+    {
+        -case       => 'To',                    # too short
+        -args       => [{
+                        username    => 'Zih77',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 2,
+    },
+    
+    {
+        -case       => 'Thibidppy',             # too long
+        -args       => [{
+                        username    => 'Zih77',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 2,
+    },
+    
+    {
+        -case       => 'guest',                 # ban outright
+        -args       => [{
+                        username    => 'guest',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 3,
+    },
+    
+    {
+        -case       => '$mined',                 # ban outright (floats)
+        -args       => [{
+                        username    => '$mined',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    }],
+        -need       => 3,
     },
     
 );

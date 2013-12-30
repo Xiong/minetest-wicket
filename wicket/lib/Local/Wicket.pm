@@ -28,11 +28,13 @@ use Config::Any;                # Load configs from any file format
 # Pseudo-globals
 
 # Compiled regexes
-our $QRFALSE            = qr/\A0?\z/            ;
-our $QRTRUE             = qr/\A(?!$QRFALSE)/    ;
+our $QRFALSE        = qr/\A0?\z/            ;
+our $QRTRUE         = qr/\A(?!$QRFALSE)/    ;
 
 # Messages
-my $message = {
+my $wicket_token    = q{%# };       # prefixed to every message
+my $message         = {
+    100 => q{Required parameter missing},
     113 => q{Unspecified error},
 };
 
@@ -167,11 +169,22 @@ sub _output {
 # 
 sub _score {
     my $args            = shift;
-    my $username        = $args->{username} or _crash('113');
+    my $username        = $args->{username} or _crash('100');
+    my $wiki            = $args->{wiki}     or _crash('100');
+    my $nowiki          = $args->{nowiki}   or _crash('100');
+    my $ban             = $args->{ban}      or _crash('100');
     
     my $score           = 1;            # start with one point = best
     
-    
+    if ( not $username =~ $wiki ) {
+        $score  = 2;
+    };
+    if ( $username =~ $nowiki ) {
+        $score  = 2;
+    };
+    if ( $username =~ $ban ) {
+        $score  = 3;
+    };
     
     return $score;
 }; ## _score
@@ -184,7 +197,7 @@ sub _score {
 # 
 sub _crash {
     my $msgno       = shift;
-    my $text        = $message->{$msgno};
+    my $text        = $wicket_token . $msgno . q{: } . $message->{$msgno};
     
     die $text;      # do not return!
 }; ## _crash
