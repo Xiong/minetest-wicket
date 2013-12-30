@@ -31,11 +31,31 @@ use Config::Any;                # Load configs from any file format
 our $QRFALSE        = qr/\A0?\z/            ;
 our $QRTRUE         = qr/\A(?!$QRFALSE)/    ;
 
+# Command line interface
+#   See: run()
+my $cli       = {
+    'help|h+'       => q{Try -h, -hh, -hhh for more help.},
+    'version|v'     => q{Print wicket version and exit.},
+    'username|u=s'  => q{Submit player's name (required unless -h or -v).},
+    'password|p=s'  => q{Temporary password.},
+    'config|c=s'    => q{Configuration file (overrides defaults)},
+    'dryrun|n'      => q{Do not create wiki account.},
+    'debug|d+'      => q{Print verbose debugging info.},
+};
+my @default_config_files     = qw(
+    wicket.yaml
+    config.yaml
+    score.yaml
+);
+
 # Messages
 my $wicket_token    = q{%# };       # prefixed to every message
 my $message         = {
     100 => q{Required parameter missing},
+    101 => q{No username given},
     113 => q{Unspecified error},
+    200 => q{This is wicket, version } . $VERSION;
+#~     000 => q{},
 };
 
 ## pseudo-globals
@@ -48,8 +68,42 @@ my $message         = {
 # Returns appropriate shell exit code: 0 for success, 1 for failure.
 # 
 sub run {
-    my $shellexit           = 1;    # no success yet
+    my $shellexit       = 1;    # no success yet
+    my @argv            = @_;
     
+    my @opt_setup       = keys %$cli;
+    my $opt             ;       # hash containing option keys
+    my $opt_rv          ;       # return value from Getopt
+    
+    # Parse options out of passed-in copy of @ARGV.
+    $rv     = GetOptionsFromArray( @argv, $opt, \@opt_setup );
+    
+    # Action tree
+    if    ( exists $opt->{debug} ) {
+        $Debug          = $opt->{debug};
+    };
+    if    ( exists $opt->{help} ) {
+        _help( $opt->{help} );
+        return 0;
+    }; 
+    if    ( exists $opt->{version} ) {
+        _output(200);
+        return 0;
+    }; 
+    if    ( exists $opt->{config} ) {
+        @config_files   = $opt->{config};
+    } 
+    else {
+        @config_files   = @default_config_files;
+    };
+    _load( @config_files );
+    
+    if    ( exists $opt->{username} ) {
+        $username   = $opt->{username};
+    } 
+    else {
+        _crash(101);
+    };
     
     
     return $shellexit;
