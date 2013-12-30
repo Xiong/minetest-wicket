@@ -12,7 +12,7 @@ my $QRFALSE      = $Local::Wicket::QRFALSE   ;
 # score.t
 #
 # Generate a numerical score for any username submitted.
-# This is like golf; 0 is best and every stroke is worse.  
+# This is like golf; 1 is best and every stroke is worse.  
 #
 my $unit        = q{Local::Wicket::_score};
 my $base        = $unit . q{: };
@@ -31,7 +31,7 @@ my @td  = (
     {
         -case       => 'Joe',
         -args       => [ 'Joe' ],
-        -need       => 0,
+        -need       => 1,
     },
     
 );

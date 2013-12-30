@@ -36,7 +36,7 @@ our $QRTRUE             = qr/\A(?!$QRFALSE)/    ;
 
 #=========# INTERNAL ROUTINE
 #
-#~     _insert({       # insert this user directly into the wiki database
+#~     _insert({   # insert this user directly into the wiki database
 #~         username    => $username,   # (game) user to insert
 #~         password    => $password,   # temporary password given to user
 #~         dbname      => $dbname,     # name of the wiki's MySQL DB
@@ -114,7 +114,7 @@ sub _insert {
 #
 #   _load( $configfn );     # load config from a YAML file
 #       
-# ____
+# TODO: Load multiple files.
 # 
 sub _load {
     my $configfn        = shift;
@@ -149,16 +149,22 @@ sub _output {
 
 #=========# INTERNAL ROUTINE
 #
+#   _score();     # score for this username
+# 
+# Generate a numerical score for any username submitted.
+# This is like golf; 1 is best and every stroke is worse.  
+# ____
+# 
+sub _score {
+    
+    
+    
+}; ## _score
+
+#=========# INTERNAL ROUTINE
+#
 #   _do_();     # short
 #       
-# Purpose   : ____
-# Parms     : ____
-# Reads     : ____
-# Returns   : ____
-# Writes    : ____
-# Throws    : ____
-# See also  : ____
-# 
 # ____
 # 
 sub _do_ {
