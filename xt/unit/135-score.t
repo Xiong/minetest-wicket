@@ -61,7 +61,8 @@ my $Verbose     = 0;
 #~    $Verbose++;
 
 for (@td) {
-    return if $_->{-skip};          # skip the entire case
+    next if $_->{-skip};          # skip the entire case
+    last if $_->{-done};          # done with all cases
     $tc++;
     my %t           = %{ $_ };
     my $case        = $base . $t{-case};

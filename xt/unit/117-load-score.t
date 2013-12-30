@@ -44,6 +44,12 @@ my @td  = (
             say {$fh} "dbuser:  $dbuser"  ;
             say {$fh} "dbpass:  $dbpass"  ;
             say {$fh} "dbtable: $dbtable" ;
+            say {$fh} "" ;
+            say {$fh} "# dummy regexes" ;
+            say {$fh} "ban:" ;
+            say {$fh} "     - /guest/" ;
+            say {$fh} "     - /mine/" ;
+            say {$fh} "     - /test/" ;
             close $fh or die '81';
             
             return 1;   # OK
@@ -63,6 +69,7 @@ my @td  = (
     },
     
     {
+        -skip   => 1,
         -case   => 'bogus',
         -args   => [ 'bogus.yaml' ],        # BAD no such file
         -die    => words(qw/ 83 /),
@@ -92,10 +99,11 @@ my $diag        = $base;
 
 # Extra-verbose dump optional for test script debug.
 my $Verbose     = 0;
-#~    $Verbose++;
+   $Verbose++;
 
 for (@td) {
-    return if $_->{-skip};          # skip the entire case
+    next if $_->{-skip};          # skip the entire case
+    last if $_->{-done};          # done with all cases
     $tc++;
     my %t           = %{ $_ };
     my $case        = $base . $t{-case};
