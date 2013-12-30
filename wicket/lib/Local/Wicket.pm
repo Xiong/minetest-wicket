@@ -156,9 +156,11 @@ sub _output {
 # ____
 # 
 sub _score {
+    my $username        = shift;
     
+    my $score           = 1;            # start with one point = best
     
-    
+    return $score;
 }; ## _score
 
 #=========# INTERNAL ROUTINE
