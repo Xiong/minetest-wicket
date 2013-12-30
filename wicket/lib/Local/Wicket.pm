@@ -31,6 +31,11 @@ use Config::Any;                # Load configs from any file format
 our $QRFALSE            = qr/\A0?\z/            ;
 our $QRTRUE             = qr/\A(?!$QRFALSE)/    ;
 
+# Messages
+my $message = {
+    113 => q{Unspecified error},
+};
+
 ## pseudo-globals
 #----------------------------------------------------------------------------#
 
@@ -149,14 +154,20 @@ sub _output {
 
 #=========# INTERNAL ROUTINE
 #
-#   _score();     # score for this username
+#~     _score({                        # score...
+#~         username    => $username,       # ... this username...
+#~         wiki        => $wiki,           #     ok to insert as wiki user
+#~         nowiki      => $nowiki,         # not ok to insert as wiki user
+#~         ban         => $ban,            # ban from game now; no explanation
 # 
 # Generate a numerical score for any username submitted.
-# This is like golf; 1 is best and every stroke is worse.  
-# ____
+# This is like golf; 1 is best and every stroke is worse. 
+#   1 is ok as 'resident', 2 is ok only as 'visitor', 3 is ban outright
+# Must pass both {wiki} and {nowiki} checks to qualify. 
 # 
 sub _score {
-    my $username        = shift;
+    my $args            = shift;
+    my $username        = $args->{username} or _crash('113');
     
     my $score           = 1;            # start with one point = best
     
@@ -167,7 +178,20 @@ sub _score {
 
 #=========# INTERNAL ROUTINE
 #
-#   _do_();     # short
+#   _crash(113);        # fatal with this message number
+#       
+# ____
+# 
+sub _crash {
+    my $msgno       = shift;
+    my $text        = $message->{$msgno};
+    
+    die $text;      # do not return!
+}; ## _crash
+
+#=========# INTERNAL ROUTINE
+#
+#~     _do_();     # short
 #       
 # ____
 # 
