@@ -16,75 +16,8 @@ use Local::Wicket;
 
 ## use
 #============================================================================#
-say "$0 Running...";
 
-
-
-say "Done.";
-exit;
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-=pod
-
-# Quickie grab from command line for security.
-my @grab            = @ARGV;
-my $dbpass            = $grab[0];
-
-
-# Test constants.
-my $indent          = q{ } x 4;
-
-my $username        = 'Foo';
-my $password        = 'barmeno';
-my $hashed          ;
-
-my $dbname          = 'athens';
-my $dbhost          = 'localhost';
-my $dbuser          = 'wiki';
-#~ my $dbpass            ;
-my $dbtable         = 'athensuser';
-
-my $dsn             = "DBI:mysql:database=$dbname;host=$dbhost";
-my $dbh             ;
-my $sth             ;
-my $stmt       ;
-
-
-    # Test insert the user and set password.
-
-# Connect to the DB.
-$dbh = DBI->connect( $dsn, $dbuser, $dbpass );
-
-# Hash the password. See: 
-#   https://www.mediawiki.org/wiki/Manual:User_table#user_password
-my $salt    = sprintf "%08x", ( int( rand() * 2**31 ) );
-$hashed     = md5_hex( $password );
-$hashed     = md5_hex( $salt . q{-} . $hashed );
-$hashed     = q{:B:} . $salt . q(:) . $hashed  ;
-
-# Compose insert. 
-$stmt  = qq{INSERT INTO $dbtable }
-            .  q{(user_id, user_name) }
-            .  q{VALUES (}
-            .  q{'0',}                          # user_id (auto_increment)
-            . $dbh->quote($username)            # user_name
-            .  q{)}
-            ;
-$dbh->do( $stmt );
-
-# Set password.
-$stmt  = qq{UPDATE $dbtable SET user_password=}
-            . $dbh->quote($hashed)
-            .  q{ WHERE user_name =}
-            . $dbh->quote($username)
-            ;
-$dbh->do( $stmt );
-
-$dbh->disconnect();
-say "Done.";
-exit;
-#----------------------------------------------------------------------------#
-
+exit Local::Wicket::run(@ARGV);
 
 #============================================================================#
 __END__     
