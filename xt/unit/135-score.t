@@ -23,6 +23,10 @@ my $base        = $unit . q{: };
 #----------------------------------------------------------------------------#
 # GLOBALS
 
+my $wiki    = q/^[A-Z][a-z]{3,8}/;
+my $nowiki  = q/wiki/;
+my $ban     = q/athens|guest|mine|test|admin|mod|sysop/;
+
 #----------------------------------------------------------------------------#
 # CASES
 
@@ -30,7 +34,12 @@ my @td  = (
     
     {
         -case       => 'Joe',
-        -args       => [ 'Joe' ],
+        -args       => [
+                        username    => 'Joe',
+                        wiki        => $wiki,
+                        nowiki      => $nowiki,
+                        ban         => $ban,
+                    ],
         -need       => 1,
     },
     

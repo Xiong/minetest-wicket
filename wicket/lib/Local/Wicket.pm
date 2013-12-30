@@ -160,6 +160,8 @@ sub _score {
     
     my $score           = 1;            # start with one point = best
     
+    
+    
     return $score;
 }; ## _score
 
