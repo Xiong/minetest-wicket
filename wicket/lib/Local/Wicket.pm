@@ -40,7 +40,7 @@ my $cli       = {
     'version|v'     => q{Print wicket version and exit.},
     'username|u=s'  => q{Submit player's name (required unless -h or -v).},
     'password|p=s'  => q{Temporary password.},
-    'config|c=s'    => q{Configuration file (overrides defaults)},
+    'config|c=s@'   => q{Configuration file (overrides defaults)},
     'insert|i'      => q{Create wiki account (if acceptable).},
     'debug|d+'      => q{Print verbose debugging info.},
 };
@@ -57,6 +57,9 @@ my $message         = {
     101 => q{No username given},
     102 => q{Bad return value},
     113 => q{Unspecified error},
+    182 => q{No wicket config file found},
+    183 => q{Config loader failed},
+    184 => q{No configuration loaded},
     
     200 => q{This is wicket, version } . $VERSION,
     
@@ -95,14 +98,13 @@ sub run {
     my $evalerr         ;
     
     # Parse options out of passed-in copy of @ARGV.
-### @opt_setup
     $opt_rv     = GetOptionsFromArray( \@argv, $opt, @opt_setup );
     
     # General action tree.
-    if ( exists $opt->{debug} )         { $Debug          = $opt->{debug}   };
-    if ( exists $opt->{help} )          { _help( $opt->{help} );   return 0 }; 
-    if ( exists $opt->{version} )       { _output(200);            return 0 }; 
-    if ( exists $opt->{config} )        { @config_files   = $opt->{config}  } 
+    if ( exists $opt->{debug} )     { $Debug          = $opt->{debug}       };
+    if ( exists $opt->{help} )      { _help( $opt->{help} );   return 0     }; 
+    if ( exists $opt->{version} )   { _output(200);            return 0     }; 
+    if ( exists $opt->{config} )    { @config_files   = @{ $opt->{config} } } 
         else { @config_files    = @default_config_files; };
     $cfg    = _load( @config_files );
     
@@ -110,9 +112,9 @@ sub run {
     %$cfg   = ( %$cfg, %$opt );
     
     # Do for specific username now.
-    if ( exists $cfg->{username} )      { $username   = $cfg->{username}; } 
+    if ( exists $cfg->{username} )  { $username   = $cfg->{username}; } 
         else { _crash(101); };
-    $score      = _score( $username );
+    $score      = _score( $cfg );
     given ($score) {
         when (/3/)  { _output(303) }
         when (/2/)  { _output(302) }
@@ -217,25 +219,30 @@ sub _insert {
 
 #=========# INTERNAL ROUTINE
 #
-#   _load( $configfn );     # load config from a YAML file
+#   _load( @files );     # load config from some YAML files
 #       
-# TODO: Load multiple files.
+# Will actually accept "any" config file format.
 # 
 sub _load {
-    my $configfn        = shift;
-    die '82' if not $configfn;
-    
-    my $config          ;
+    my @files           = @_;
+    _crash(182) if not @files;
+### @files    
+    my $cfg             ;
     
     my $rv          = Config::Any->load_files({ 
-        files           => [$configfn], # aryref
+        files           => \@files,     # aryref
         use_ext         => 1,           # format must match extension
         flatten_to_hash => 1,           # less wrapping paper
     });
+    _crash(183) if not ref $rv or not keys $rv;     # got nothing
     
-    $config = $rv->{$configfn};
-    die '83' if not ref $config or not keys $config;    # got nothing
-    return $config;
+#~ ### $rv    
+    # Merge results; later values overwrite earlier
+    %$cfg = ( map {%$_} values %$rv );  # discard file keys themselves
+#~ ### $cfg
+    
+    _crash(184) if not ref $cfg or not keys $cfg;   # got nothing
+    return $cfg;
 }; ## _load
 
 #=========# INTERNAL ROUTINE
@@ -253,20 +260,20 @@ sub _load {
 # 
 sub _score {
     my $args            = shift;
-    my $username        = $args->{username} or _crash('100');
-    my $wiki            = $args->{wiki}     or _crash('100');
-    my $nowiki          = $args->{nowiki}   or _crash('100');
-    my $ban             = $args->{ban}      or _crash('100');
+    my $username        = $args->{username} || _crash(100);
+    my $wiki            = $args->{wiki}     || $QRTRUE    ;
+    my $nowiki          = $args->{nowiki}   || $QRFALSE   ;
+    my $ban             = $args->{ban}      || $QRFALSE   ;
     
     my $score           = 1;            # start with one point = best
     
-    if ( not $username =~ $wiki ) {
+    if ( not $username  =~ qr/$wiki/    ) {
         $score  = 2;
     };
-    if ( $username =~ $nowiki ) {
+    if ( $username      =~ qr/$nowiki/  ) {
         $score  = 2;
     };
-    if ( $username =~ $ban ) {
+    if ( $username      =~ qr/$ban/     ) {
         $score  = 3;
     };
     
