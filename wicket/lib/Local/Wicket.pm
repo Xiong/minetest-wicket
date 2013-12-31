@@ -20,8 +20,8 @@ use DBD::mysql;         # DBI driver for MySQL
 # Modules distributed in wheezy
 use Config::Any;                # Load configs from any file format
 
-# Alternate uses
-#~ use Devel::Comments '###', ({ -file => 'debug.log' });                   #~
+# Module bundled in this project
+use Devel::Comments '###', ({ -file => 'debug.log' });                   #~
 
 ## use
 #============================================================================#
@@ -95,8 +95,8 @@ sub run {
     my $evalerr         ;
     
     # Parse options out of passed-in copy of @ARGV.
-for (@opt)
-    $opt_rv     = GetOptionsFromArray( @argv, $opt, \@opt_setup );
+### @opt_setup
+    $opt_rv     = GetOptionsFromArray( \@argv, $opt, @opt_setup );
     
     # General action tree.
     if ( exists $opt->{debug} )         { $Debug          = $opt->{debug}   };

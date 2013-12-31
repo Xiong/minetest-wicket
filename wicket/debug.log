@@ -1,0 +1,10 @@
+
+### @opt_setup: [
+###               'insert|i',
+###               'config|c=s',
+###               'help|h+',
+###               'password|p=s',
+###               'debug|d+',
+###               'username|u=s',
+###               'version|v'
+###             ]
