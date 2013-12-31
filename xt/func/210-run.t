@@ -9,12 +9,11 @@ my $QRTRUE       = $Local::Wicket::QRTRUE    ;
 my $QRFALSE      = $Local::Wicket::QRFALSE   ;
 
 #----------------------------------------------------------------------------#
-# score.t
+# run.t
 #
-# Generate a numerical score for any username submitted.
-# This is like golf; 1 is best and every stroke is worse.  
+# Functional test.
 #
-my $unit        = q{Local::Wicket::_score};
+my $unit        = q{Local::Wicket::run};
 my $base        = $unit . q{: };
 
 #----------------------------------------------------------------------------#
@@ -24,9 +23,6 @@ my $base        = $unit . q{: };
 # GLOBALS
 
 my $wicket_token    = q{%# };       # prefixed to every message
-my $wiki    = q/^[A-Z][a-z]{2,7}$/; # 3..8 letters, Titlecased
-my $nowiki  = q/wiki/;
-my $ban     = q/athens|guest|mine|test|admin|mod|sysop/;
 
 #----------------------------------------------------------------------------#
 # CASES
@@ -34,101 +30,66 @@ my $ban     = q/athens|guest|mine|test|admin|mod|sysop/;
 my @td  = (
     
     {
-        -case       => 'Joe',
-        -args       => [{
-                        username    => 'Joe',
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
-        -need       => 1,
+        -skip       => 1,
+        -case       => 'null',
     },
+    
+    {
+        -case       => 'version',
+        -args       => ['--version'],
+        -need       => 0,               # shell OK
+        -outlike    => words(qw( wicket version )),
+    },
+    
+    {
+        -case       => 'Joe',
+        -args       => [qw(
+                        --config    dummy.yaml
+                        --config    test.yaml
+                        --username  Joe
+                        --password  777
+                        
+                    )],
+        -need       => 0,               # shell OK
+        -outlike    => words(qw( 301 onwiki )),
+#~         -outlike    => $QRTRUE,     # tolerant
+#~         -outlike    => $QRFALSE,    # force dump
+    },
+    
+    {   -done => 1 },   # X X X X X X X X X X X X X X   DONE - SKIP ALL
     
     {
         -case       => 'missing arg',
-        -args       => [{
-                    #    username    => 'Joe',      # missing arg no good
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
-        -die        => qr/100/,       # how to check for this in client code
-    },
-    
-    {
-        -case       => 'missing arg again',
-        -args       => [{
-                    #    username    => 'Joe',      # missing arg no good
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
-        -die        => qr/(?:$wicket_token)100:/,   # test script looks harder
+        -die        => qr/(?:$wicket_token)100:/,
     },
     
     {
         -case       => 'BOO',                   # not title case
-        -args       => [{
-                        username    => 'BOO',
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
         -need       => 2,
     },
     
     {
         -case       => 'Zih77',                 # numerals
-        -args       => [{
-                        username    => 'Zih77',
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
         -need       => 2,
     },
     
     {
         -case       => 'To',                    # too short
-        -args       => [{
-                        username    => 'Zih77',
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
         -need       => 2,
     },
     
     {
         -case       => 'Thibidppy',             # too long
-        -args       => [{
-                        username    => 'Zih77',
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
         -need       => 2,
     },
     
     {
         -case       => 'guest',                 # ban outright
-        -args       => [{
-                        username    => 'guest',
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
         -need       => 3,
     },
     
     {
         -case       => '$mined',                 # ban outright (floats)
-        -args       => [{
-                        username    => '$mined',
-                        wiki        => $wiki,
-                        nowiki      => $nowiki,
-                        ban         => $ban,
-                    }],
         -need       => 3,
     },
     
@@ -214,7 +175,7 @@ for (@td) {
             $want           = $like;
             like( $got, $want, $diag );
         }; 
-        if ($need) {
+        if ( defined $t{-need} ) {
             $diag           = 'return-is';
             $got            = $rv[0];
             $want           = $need;

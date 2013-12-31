@@ -5,8 +5,9 @@ use warnings;
 use version; our $VERSION = qv('v0.0.0');
 
 # Core modules
-use Getopt::Long;                           # Parses command-line options
-Getopt::Long::Configure ("bundling");       # enable, for instance, -xyz
+use Getopt::Long                            # Parses command-line options
+    qw( GetOptionsFromArray ),              # not directly from @ARGV
+    qw( :config bundling );                 # enable, for instance, -xyz
 use Pod::Usage;                             # Build help text from POD
 use Pod::Find qw{pod_where};                # POD is in ...
 
@@ -19,27 +20,136 @@ use DBD::mysql;         # DBI driver for MySQL
 # Modules distributed in wheezy
 use Config::Any;                # Load configs from any file format
 
-# Alternate uses
-#~ use Devel::Comments '###', ({ -file => 'debug.log' });                   #~
+# Module bundled in this project
+use Devel::Comments '###', ({ -file => 'debug.log' });                   #~
 
 ## use
 #============================================================================#
 
 # Pseudo-globals
+our $Debug          = 0;
 
 # Compiled regexes
 our $QRFALSE        = qr/\A0?\z/            ;
 our $QRTRUE         = qr/\A(?!$QRFALSE)/    ;
 
+# Command line interface
+#   See: run()
+my $cli       = {
+    'help|h+'       => q{Try -h, -hh, -hhh for more help.},
+    'version|v'     => q{Print wicket version and exit.},
+    'username|u=s'  => q{Submit player's name (required unless -h or -v).},
+    'password|p=s'  => q{Temporary password.},
+    'config|c=s@'   => q{Configuration file (overrides defaults)},
+    'insert|i'      => q{Create wiki account (if acceptable).},
+    'debug|d+'      => q{Print verbose debugging info.},
+};
+my @default_config_files     = qw(
+    wicket.yaml
+    config.yaml
+    score.yaml
+);
+
 # Messages
 my $wicket_token    = q{%# };       # prefixed to every message
 my $message         = {
     100 => q{Required parameter missing},
+    101 => q{No username given},
+    102 => q{Bad return value},
     113 => q{Unspecified error},
+    114 => q{Tree fall-through},
+    182 => q{No wicket config file found},
+    183 => q{Config loader failed},
+    184 => q{No configuration loaded},
+    
+    200 => q{This is wicket, version } . $VERSION,
+    
+    301 => q{This username can be registered onwiki},
+    302 => q{The wiki cannot accept this username},
+    303 => q{Ban this player},
+    
+    401 => q{Wiki DB account insertion success},
+    402 => q{Can't create account onwiki},
+    451 => q{Username: },
+    452 => q{Password: },
+#~     000 => q{},
 };
 
 ## pseudo-globals
 #----------------------------------------------------------------------------#
+
+#=========# MAIN EXTERNAL ROUTINE
+#
+#~     exit run(@ARGV);     # invoke
+#       
+# Returns appropriate shell exit code: 0 for success, 1 for failure.
+# 
+sub run {
+    my @argv            = @_;
+    
+    my @opt_setup       = keys %$cli;
+    my $opt             = {};   # option keys and maybe config
+    my $opt_rv          ;       # return value from Getopt
+    my $score           ;
+    my @config_files    ;
+    my $cfg             = {};   # "everything"
+    my $username        ;
+    my $password        ;
+    my $evalerr         ;
+    
+    # Parse options out of passed-in copy of @ARGV.
+    $opt_rv     = GetOptionsFromArray( \@argv, $opt, @opt_setup );
+    
+    # General action tree.
+    if ( exists $opt->{debug} )     { $Debug          = $opt->{debug}       };
+    if ( exists $opt->{help} )      { _help( $opt->{help} );   return 0     }; 
+    if ( exists $opt->{version} )   { _output(200);            return 0     }; 
+    if ( exists $opt->{config} )    { @config_files   = @{ $opt->{config} } } 
+        else { @config_files    = @default_config_files; };
+    $cfg    = _load( @config_files );
+    
+    # Merge hashrefs; command line $opt overwrites stored config $cfg
+    %$cfg   = ( %$cfg, %$opt );
+    
+    # Do for specific username now.
+    if ( exists $cfg->{username} )  { $username   = $cfg->{username}; } 
+        else { _crash(101); };
+    $score      = _score( $cfg );
+#~ ### $score
+    given ($score) {
+        when (/3/)  {
+            _output(303);
+            return 0;
+        }
+        when (/2/)  {
+            _output(302);
+            return 0;
+        }
+        when (/1/)  { 
+            _output(301);
+            if ( exists $cfg->{insert} and $cfg->{insert} ) {
+                $password = eval{ insert($cfg) };
+                $evalerr  = $@;
+                if ($evalerr) {
+                  _output(402);
+                  return 1;         # failed insert
+                }
+                else {
+                  _output( $message->{451} . $username );
+                  _output( $message->{452} . $password );
+                  _output(401);
+                  return 0;
+                }; # ?evalerr
+            }
+            else {
+                return 0;
+            }; ## ?insert  
+        } ## case score 1
+        default     { _crash(102) }
+    }; ## given score
+    
+    _crash(114);
+}; ## run
 
 #=========# INTERNAL ROUTINE
 #
@@ -114,45 +224,36 @@ sub _insert {
     $dbh->disconnect();
     
     
-    return 1;
+    return $password;
 }; ## _insert
 
 #=========# INTERNAL ROUTINE
 #
-#   _load( $configfn );     # load config from a YAML file
+#   _load( @files );     # load config from some YAML files
 #       
-# TODO: Load multiple files.
+# Will actually accept "any" config file format.
 # 
 sub _load {
-    my $configfn        = shift;
-    die '82' if not $configfn;
-    
-    my $config          ;
+    my @files           = @_;
+    _crash(182) if not @files;
+#~ ### @files
+    my $cfg             ;
     
     my $rv          = Config::Any->load_files({ 
-        files           => [$configfn], # aryref
+        files           => \@files,     # aryref
         use_ext         => 1,           # format must match extension
         flatten_to_hash => 1,           # less wrapping paper
     });
+    _crash(183) if not ref $rv or not keys $rv;     # got nothing
     
-    $config = $rv->{$configfn};
-    die '83' if not ref $config or not keys $config;    # got nothing
-    return $config;
+#~ ### $rv    
+    # Merge results; later values overwrite earlier
+    %$cfg = ( map {%$_} values %$rv );  # discard file keys themselves
+#~ ### $cfg
+    
+    _crash(184) if not ref $cfg or not keys $cfg;   # got nothing
+    return $cfg;
 }; ## _load
-
-#=========# INTERNAL ROUTINE
-#
-#   _output();     # IPC
-# 
-# Mostly just a wrapper around say().
-# 
-sub _output {
-    my @args    = @_;
-    my $wicket_token    = q{%# };       # prefixed to every message
-    
-    for (@args) { say $wicket_token . $_ };
-    
-}; ## _output
 
 #=========# INTERNAL ROUTINE
 #
@@ -169,20 +270,20 @@ sub _output {
 # 
 sub _score {
     my $args            = shift;
-    my $username        = $args->{username} or _crash('100');
-    my $wiki            = $args->{wiki}     or _crash('100');
-    my $nowiki          = $args->{nowiki}   or _crash('100');
-    my $ban             = $args->{ban}      or _crash('100');
+    my $username        = $args->{username} || _crash(100);
+    my $wiki            = $args->{wiki}     || $QRTRUE    ;
+    my $nowiki          = $args->{nowiki}   || $QRFALSE   ;
+    my $ban             = $args->{ban}      || $QRFALSE   ;
     
     my $score           = 1;            # start with one point = best
     
-    if ( not $username =~ $wiki ) {
+    if ( not $username  =~ qr/$wiki/    ) {
         $score  = 2;
     };
-    if ( $username =~ $nowiki ) {
+    if ( $username      =~ qr/$nowiki/  ) {
         $score  = 2;
     };
-    if ( $username =~ $ban ) {
+    if ( $username      =~ qr/$ban/     ) {
         $score  = 3;
     };
     
@@ -191,9 +292,28 @@ sub _score {
 
 #=========# INTERNAL ROUTINE
 #
+#   _output();     # IPC
+# 
+# Mostly just a wrapper around say().
+# 
+sub _output {
+    my @args            = @_;
+    
+    for (@args) { 
+        if ( exists $message->{$_} ) {
+            say $wicket_token . $_ . q{: } . $message->{$_}; 
+        }
+        else {
+            say $wicket_token . $_;
+        };
+    };
+    
+}; ## _output
+
+#=========# INTERNAL ROUTINE
+#
 #   _crash(113);        # fatal with this message number
 #       
-# ____
 # 
 sub _crash {
     my $msgno       = shift;
