@@ -51,7 +51,9 @@ my @td  = (
                         
                     )],
         -need       => 0,               # shell OK
-        -outlike    => $QRTRUE,
+        -outlike    => words(qw( 301 onwiki )),
+#~         -outlike    => $QRTRUE,     # tolerant
+#~         -outlike    => $QRFALSE,    # force dump
     },
     
     {   -done => 1 },   # X X X X X X X X X X X X X X   DONE - SKIP ALL

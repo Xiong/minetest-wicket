@@ -57,6 +57,7 @@ my $message         = {
     101 => q{No username given},
     102 => q{Bad return value},
     113 => q{Unspecified error},
+    114 => q{Tree fall-through},
     182 => q{No wicket config file found},
     183 => q{Config loader failed},
     184 => q{No configuration loaded},
@@ -84,7 +85,6 @@ my $message         = {
 # Returns appropriate shell exit code: 0 for success, 1 for failure.
 # 
 sub run {
-    my $shellexit       = 1;    # no success yet
     my @argv            = @_;
     
     my @opt_setup       = keys %$cli;
@@ -115,30 +115,40 @@ sub run {
     if ( exists $cfg->{username} )  { $username   = $cfg->{username}; } 
         else { _crash(101); };
     $score      = _score( $cfg );
+#~ ### $score
     given ($score) {
-        when (/3/)  { _output(303) }
-        when (/2/)  { _output(302) }
+        when (/3/)  {
+            _output(303);
+            return 0;
+        }
+        when (/2/)  {
+            _output(302);
+            return 0;
+        }
         when (/1/)  { 
-                      _output(301); 
-                      if ( exists $cfg->{insert} and $cfg->{insert} ) {
-                          $password = eval{ insert($cfg) };
-                          $evalerr  = $@;
-                          if ($evalerr) {
-                            $shellexit = 1;
-                            _output(402);
-                          } 
-                          else {
-                            _output( $message->{451} . $username );
-                            _output( $message->{452} . $password );
-                            $shellexit = 0;
-                            _output(401);
-                          }; # evalerr
-                      }; ## dryrun
+            _output(301);
+            if ( exists $cfg->{insert} and $cfg->{insert} ) {
+                $password = eval{ insert($cfg) };
+                $evalerr  = $@;
+                if ($evalerr) {
+                  _output(402);
+                  return 1;         # failed insert
+                }
+                else {
+                  _output( $message->{451} . $username );
+                  _output( $message->{452} . $password );
+                  _output(401);
+                  return 0;
+                }; # ?evalerr
+            }
+            else {
+                return 0;
+            }; ## ?insert  
         } ## case score 1
-        default     { die(102) }
+        default     { _crash(102) }
     }; ## given score
     
-    return $shellexit;
+    _crash(114);
 }; ## run
 
 #=========# INTERNAL ROUTINE
@@ -226,7 +236,7 @@ sub _insert {
 sub _load {
     my @files           = @_;
     _crash(182) if not @files;
-### @files    
+#~ ### @files
     my $cfg             ;
     
     my $rv          = Config::Any->load_files({ 

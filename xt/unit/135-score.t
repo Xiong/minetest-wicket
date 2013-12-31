@@ -47,23 +47,23 @@ my @td  = (
     {
         -case       => 'missing arg',
         -args       => [{
-                        username    => 'Joe',
-                    #    wiki        => $wiki,      # missing arg no good
+                    #    username    => 'Joe',      # missing arg no good
+                        wiki        => $wiki,
                         nowiki      => $nowiki,
                         ban         => $ban,
                     }],
-        -die        => qr/100/,                     # how to check for this
+        -die        => qr/100/,       # how to check for this in client code
     },
     
     {
         -case       => 'missing arg again',
         -args       => [{
-                        username    => 'Joe',
-                    #    wiki        => $wiki,      # missing arg no good
+                    #    username    => 'Joe',      # missing arg no good
+                        wiki        => $wiki,
                         nowiki      => $nowiki,
                         ban         => $ban,
                     }],
-        -die        => qr/(?:$wicket_token)100:/,
+        -die        => qr/(?:$wicket_token)100:/,   # test script looks harder
     },
     
     {
