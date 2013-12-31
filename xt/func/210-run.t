@@ -30,6 +30,12 @@ my $wicket_token    = q{%# };       # prefixed to every message
 my @td  = (
     
     {
+        -case       => 'null',
+    },
+    
+    {   -done => 1 },   # X X X X X X X X X X X X X X   DONE - SKIP ALL
+    
+    {
         -case       => 'Joe',
         -args       => [qw(
                         --config    'dummy.yaml'
@@ -40,8 +46,6 @@ my @td  = (
         -need       => 0,               # shell OK
         -outlike    => $QRTRUE,
     },
-    
-    {   -done => 1 },   # X X X X X X X X X X X X X X   DONE - SKIP ALL
     
     {
         -case       => 'missing arg',

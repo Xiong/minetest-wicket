@@ -6,6 +6,7 @@ use version; our $VERSION = qv('v0.0.0');
 
 # Core modules
 use Getopt::Long                            # Parses command-line options
+    qw( GetOptionsFromArray ),              # not directly from @ARGV
     qw( :config bundling );                 # enable, for instance, -xyz
 use Pod::Usage;                             # Build help text from POD
 use Pod::Find qw{pod_where};                # POD is in ...
@@ -40,7 +41,7 @@ my $cli       = {
     'username|u=s'  => q{Submit player's name (required unless -h or -v).},
     'password|p=s'  => q{Temporary password.},
     'config|c=s'    => q{Configuration file (overrides defaults)},
-    'dryrun|n'      => q{Do not create wiki account.},
+    'insert|i'      => q{Create wiki account (if acceptable).},
     'debug|d+'      => q{Print verbose debugging info.},
 };
 my @default_config_files     = qw(
@@ -84,16 +85,17 @@ sub run {
     my @argv            = @_;
     
     my @opt_setup       = keys %$cli;
-    my $opt             ;       # option keys and maybe config
+    my $opt             = {};   # option keys and maybe config
     my $opt_rv          ;       # return value from Getopt
     my $score           ;
     my @config_files    ;
-    my $cfg             ;       # "everything"
+    my $cfg             = {};   # "everything"
     my $username        ;
     my $password        ;
     my $evalerr         ;
     
     # Parse options out of passed-in copy of @ARGV.
+for (@opt)
     $opt_rv     = GetOptionsFromArray( @argv, $opt, \@opt_setup );
     
     # General action tree.
@@ -116,7 +118,7 @@ sub run {
         when (/2/)  { _output(302) }
         when (/1/)  { 
                       _output(301); 
-                      if ( not exists $cfg->{dryrun} ) {
+                      if ( exists $cfg->{insert} and $cfg->{insert} ) {
                           $password = eval{ insert($cfg) };
                           $evalerr  = $@;
                           if ($evalerr) {
