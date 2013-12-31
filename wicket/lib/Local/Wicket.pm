@@ -26,6 +26,7 @@ use Config::Any;                # Load configs from any file format
 #============================================================================#
 
 # Pseudo-globals
+our $Debug          = 0;
 
 # Compiled regexes
 our $QRFALSE        = qr/\A0?\z/            ;
@@ -53,8 +54,19 @@ my $wicket_token    = q{%# };       # prefixed to every message
 my $message         = {
     100 => q{Required parameter missing},
     101 => q{No username given},
+    102 => q{Bad return value},
     113 => q{Unspecified error},
-    200 => q{This is wicket, version } . $VERSION;
+    
+    200 => q{This is wicket, version } . $VERSION,
+    
+    301 => q{This username can be registered onwiki},
+    302 => q{The wiki cannot accept this username},
+    303 => q{Ban this player},
+    
+    401 => q{Wiki DB account insertion success},
+    402 => q{Can't create account onwiki},
+    451 => q{Username: },
+    452 => q{Password: },
 #~     000 => q{},
 };
 
@@ -72,39 +84,55 @@ sub run {
     my @argv            = @_;
     
     my @opt_setup       = keys %$cli;
-    my $opt             ;       # hash containing option keys
+    my $opt             ;       # option keys and maybe config
     my $opt_rv          ;       # return value from Getopt
+    my $score           ;
+    my @config_files    ;
+    my $cfg             ;       # "everything"
+    my $username        ;
+    my $password        ;
+    my $evalerr         ;
     
     # Parse options out of passed-in copy of @ARGV.
-    $rv     = GetOptionsFromArray( @argv, $opt, \@opt_setup );
+    $opt_rv     = GetOptionsFromArray( @argv, $opt, \@opt_setup );
     
-    # Action tree
-    if    ( exists $opt->{debug} ) {
-        $Debug          = $opt->{debug};
-    };
-    if    ( exists $opt->{help} ) {
-        _help( $opt->{help} );
-        return 0;
-    }; 
-    if    ( exists $opt->{version} ) {
-        _output(200);
-        return 0;
-    }; 
-    if    ( exists $opt->{config} ) {
-        @config_files   = $opt->{config};
-    } 
-    else {
-        @config_files   = @default_config_files;
-    };
-    _load( @config_files );
+    # General action tree.
+    if ( exists $opt->{debug} )         { $Debug          = $opt->{debug}   };
+    if ( exists $opt->{help} )          { _help( $opt->{help} );   return 0 }; 
+    if ( exists $opt->{version} )       { _output(200);            return 0 }; 
+    if ( exists $opt->{config} )        { @config_files   = $opt->{config}  } 
+        else { @config_files    = @default_config_files; };
+    $cfg    = _load( @config_files );
     
-    if    ( exists $opt->{username} ) {
-        $username   = $opt->{username};
-    } 
-    else {
-        _crash(101);
-    };
+    # Merge hashrefs; command line $opt overwrites stored config $cfg
+    %$cfg   = ( %$cfg, %$opt );
     
+    # Do for specific username now.
+    if ( exists $cfg->{username} )      { $username   = $cfg->{username}; } 
+        else { _crash(101); };
+    $score      = _score( $username );
+    given ($score) {
+        when (/3/)  { _output(303) }
+        when (/2/)  { _output(302) }
+        when (/1/)  { 
+                      _output(301); 
+                      if ( not exists $cfg->{dryrun} ) {
+                          $password = eval{ insert($cfg) };
+                          $evalerr  = $@;
+                          if ($evalerr) {
+                            $shellexit = 1;
+                            _output(402);
+                          } 
+                          else {
+                            _output( $message->{451} . $username );
+                            _output( $message->{452} . $password );
+                            $shellexit = 0;
+                            _output(401);
+                          }; # evalerr
+                      }; ## dryrun
+        } ## case score 1
+        default     { die(102) }
+    }; ## given score
     
     return $shellexit;
 }; ## run
@@ -182,7 +210,7 @@ sub _insert {
     $dbh->disconnect();
     
     
-    return 1;
+    return $password;
 }; ## _insert
 
 #=========# INTERNAL ROUTINE
@@ -207,20 +235,6 @@ sub _load {
     die '83' if not ref $config or not keys $config;    # got nothing
     return $config;
 }; ## _load
-
-#=========# INTERNAL ROUTINE
-#
-#   _output();     # IPC
-# 
-# Mostly just a wrapper around say().
-# 
-sub _output {
-    my @args    = @_;
-    my $wicket_token    = q{%# };       # prefixed to every message
-    
-    for (@args) { say $wicket_token . $_ };
-    
-}; ## _output
 
 #=========# INTERNAL ROUTINE
 #
@@ -259,9 +273,28 @@ sub _score {
 
 #=========# INTERNAL ROUTINE
 #
+#   _output();     # IPC
+# 
+# Mostly just a wrapper around say().
+# 
+sub _output {
+    my @args            = @_;
+    
+    for (@args) { 
+        if ( exists $message->{$_} ) {
+            say $wicket_token . $_ . q{: } . $message->{$_}; 
+        }
+        else {
+            say $wicket_token . $_;
+        };
+    };
+    
+}; ## _output
+
+#=========# INTERNAL ROUTINE
+#
 #   _crash(113);        # fatal with this message number
 #       
-# ____
 # 
 sub _crash {
     my $msgno       = shift;
