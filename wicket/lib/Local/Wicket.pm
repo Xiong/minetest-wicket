@@ -128,10 +128,11 @@ sub run {
         when (/1/)  { 
             _output(301);
             if ( exists $cfg->{insert} and $cfg->{insert} ) {
-                $password = eval{ insert($cfg) };
+                $password = eval{ _insert($cfg) };
                 $evalerr  = $@;
                 if ($evalerr) {
                   _output(402);
+                  _output($evalerr);
                   return 1;         # failed insert
                 }
                 else {
