@@ -2,7 +2,7 @@ package Local::Wicket;
 use 5.014002;   # 5.14.3    # 2012  # pop $arrayref, copy s///r
 use strict;
 use warnings;
-use version; our $VERSION = qv('v0.0.0');
+use version; our $VERSION = qv('v0.0.1');
 
 # Core modules
 use Getopt::Long                            # Parses command-line options
@@ -347,7 +347,7 @@ Local::Wicket - Minetest-Mediawiki bridge
 
 =head1 VERSION
 
-This document describes Local::Wicket version v0.0.0
+This document describes Local::Wicket version v0.0.1
 
 =head1 SYNOPSIS
 
