@@ -2,7 +2,7 @@ package Local::Wicket;
 use 5.014002;   # 5.14.3    # 2012  # pop $arrayref, copy s///r
 use strict;
 use warnings;
-use version; our $VERSION = qv('v0.0.0');
+use version; our $VERSION = qv('v0.0.1');
 
 # Core modules
 use Getopt::Long                            # Parses command-line options
@@ -128,10 +128,11 @@ sub run {
         when (/1/)  { 
             _output(301);
             if ( exists $cfg->{insert} and $cfg->{insert} ) {
-                $password = eval{ insert($cfg) };
+                $password = eval{ _insert($cfg) };
                 $evalerr  = $@;
                 if ($evalerr) {
                   _output(402);
+                  _output($evalerr);
                   return 1;         # failed insert
                 }
                 else {
@@ -347,7 +348,7 @@ Local::Wicket - Minetest-Mediawiki bridge
 
 =head1 VERSION
 
-This document describes Local::Wicket version v0.0.0
+This document describes Local::Wicket version v0.0.1
 
 =head1 SYNOPSIS
 

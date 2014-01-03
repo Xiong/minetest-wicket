@@ -6,7 +6,7 @@
 use 5.014002;   # 5.14.3    # 2012  # pop $arrayref, copy s///r
 use strict;
 use warnings;
-use version; our $VERSION = qv('0.0.0');
+use version; our $VERSION = qv('0.0.1');
 
 # Core module
 use lib qw| lib |;
